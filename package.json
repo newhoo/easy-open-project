@@ -1,0 +1,75 @@
+{
+  "name": "easy-open-project",
+  "icon": "icon.png",
+  "publisher": "newhoo",
+  "displayName": "Easy Open Project",
+  "description": "Open projects via custom list easily",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/newhoo/vscode-easy-open-project.git"
+  },
+  "keywords": [
+    "browser",
+    "open",
+    "github",
+    "stash",
+    "bitbucket",
+    "ado",
+    "gitlab",
+    "azure",
+    "devops"
+  ],
+  "engines": {
+    "vscode": "^1.73.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "easyOpenProject.openProject",
+        "title": "Easy Open Project: Open Project"
+      },
+      {
+        "command": "easyOpenProject.addProjectFolders",
+        "title": "Easy Open Project: Add Project Folder"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Easy Open Project",
+      "properties": {
+        "easyOpenProject.projectFolders": {
+          "type": "array",
+					"items": {
+						"type": "string",
+						"description": "folder path"
+					},
+					"default": [],
+					"markdownDescription": "Add project parent absolute path",
+          "scope": "machine"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "webpack --mode production",
+    "webpack": "webpack --mode development",
+    "webpack-dev": "webpack --mode development --watch",
+    "test-compile": "tsc -p ./",
+    "lint": "eslint \"src/**/*.ts\"",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.73.0",
+    "@types/node": "^18.x",
+    "ts-loader": "^7.0.5",
+    "typescript": "^5.3.2",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
+  }
+}
