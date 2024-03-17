@@ -10,14 +10,12 @@
     "url": "https://github.com/newhoo/vscode-easy-open-project.git"
   },
   "keywords": [
-    "browser",
+    "easy",
     "open",
-    "github",
-    "stash",
-    "bitbucket",
-    "ado",
-    "gitlab",
-    "azure",
+    "project",
+    "switcher",
+    "manager",
+    "develop",
     "devops"
   ],
   "engines": {
