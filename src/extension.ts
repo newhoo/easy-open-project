@@ -101,9 +101,11 @@ function openProject(projects: vscode.QuickPickItem[]) {
 
 function readProjects(dir: string, allDirs: string[]): vscode.QuickPickItem[] {
   const projects: vscode.QuickPickItem[] = []
-  fs.readdirSync(dir, { withFileTypes: true }).forEach(function (dirent) {
+  fs.readdirSync(dir, { withFileTypes: true }).filter(dirent => {
+    return dirent.isDirectory() && !dirent.name.startsWith('.');
+  }).forEach(function (dirent) {
     var filePath = path.join(dirent.path, dirent.name);
-    if (dirent.isDirectory() && !allDirs.includes(filePath)) {
+    if (!allDirs.includes(filePath)) {
       projects.push({
         "label": dirent.name,
         "description": filePath,
