@@ -12,6 +12,8 @@ Open projects via custom list easily. Install via the [VSCode Marketplace](https
 
 - Extension Settings
 
+_support **machine scope**: user or remote_
+
 ![Extension settings](docs/settings.png)
 
 ## Requirements
