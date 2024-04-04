@@ -4,7 +4,7 @@
   "publisher": "newhoo",
   "displayName": "Easy Open Project",
   "description": "Open projects via custom list easily",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/newhoo/vscode-easy-open-project.git"
@@ -43,12 +43,24 @@
       "properties": {
         "easyOpenProject.projectFolders": {
           "type": "array",
+          "order": 0,
 					"items": {
 						"type": "string",
 						"description": "folder path"
 					},
 					"default": [],
-					"markdownDescription": "Add project parent absolute path",
+					"markdownDescription": "Add absolute folder path that contains project folder.",
+          "scope": "machine"
+        },
+        "easyOpenProject.filterFolderNames": {
+          "type": "array",
+          "order": 1,
+					"items": {
+						"type": "string",
+						"description": "folder name"
+					},
+					"default": ["docs"],
+					"markdownDescription": "Filter folders such as `docs`.",
           "scope": "machine"
         }
       }
