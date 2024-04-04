@@ -33,15 +33,7 @@ function openProjectCommand() {
     projects.push(...readProjects(dirpath, projectDirs, filterFolderNames))
   });
 
-  if (projects.length < 1) {
-    projects.push({
-      "label": "Add a folder firstly",
-      "description": "",
-      iconPath: new vscode.ThemeIcon("new-folder", undefined)
-    })
-  }
-
-  openProject(projects);
+  openProject(projects, true);
 }
 
 /**
@@ -67,17 +59,29 @@ function addProjectFoldersCommand() {
  * do open project
  * @param projects vscode pick items
  */
-function openProject(projects: vscode.QuickPickItem[]) {
-  projects.sort((a, b) => a.label.toLowerCase() < b.label.toLowerCase() ? -1 : 1)
+function openProject(projects: vscode.QuickPickItem[], showAddFolderItem: boolean) {
+  let placeHolder = "Select project to open";
+  if (projects.length > 1) {
+    projects.sort((a, b) => a.label.toLowerCase() < b.label.toLowerCase() ? -1 : 1)
+  } else if (projects.length === 0 && showAddFolderItem) {
+    placeHolder = "Not found project, add folders firstly."
+    projects.push({
+      "label": "Add Folder",
+      "description": "",
+      iconPath: new vscode.ThemeIcon("new-folder", undefined)
+    })
+  }
+
   vscode.window.showQuickPick(projects,
     {
-      placeHolder: "Select project to open",
+      placeHolder: placeHolder,
       canPickMany: false,
     }
   ).then((res: vscode.QuickPickItem | undefined) => {
     if (!res) return;
+
     // Add folder when project list is empty
-    if (res.label === 'Add a folder firstly') {
+    if (res.label === 'Add Folder') {
       vscode.window.showOpenDialog({
         canSelectFiles: false,
         canSelectFolders: true,
@@ -93,13 +97,15 @@ function openProject(projects: vscode.QuickPickItem[]) {
 
             projectDirs.push(u.fsPath)
           });
+
           let filterFolderNames = <string[]>vscode.workspace.getConfiguration('easyOpenProject')['filterFolderNames']
           filterFolderNames = [...new Set(filterFolderNames)]
           projectDirs.forEach(fsPath => {
             projects.push(...readProjects(fsPath, projectDirs, filterFolderNames))
           })
-          if (projects) {
-            openProject(projects);
+
+          if (projects.length > 0) {
+            openProject(projects, false);
           }
         }
       })
