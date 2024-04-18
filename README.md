@@ -1,17 +1,17 @@
-# Spring Bean Invoker
+# Easy Open Project
 
-Invoke spring bean method in java project conveniently.
-
-## Use in Idea
-
-- Introduction: [bean-invoker-intellij-plugin/README.md](./bean-invoker-intellij-plugin/README.md)
-- Find in [Jetbrains Marketplace](https://plugins.jetbrains.com/plugin/13203-spring-bean-invoker)
-
-![idea-invoke.png](docs/idea-invoke.png)
+Open projects via custom list easily.
 
 ## Use in VSCode
 
-- Introduction: [bean-invoker-vscode-plugin/README](./bean-invoker-vscode-plugin/README.md)
-- Find in [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=newhoo.spring-bean-invoker)
+- Introduction: [easy-open-project-vscode-plugin/README](./easy-open-project-vscode-plugin/README.md)
+- Find in [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=newhoo.easy-open-project)
 
-![](docs/invoke.png)
+![](docs/image-2.png)
+
+## Use in Idea
+
+- Introduction: [easy-open-project-intellij-plugin/README.md](./easy-open-project-intellij-plugin//README.md)
+- Find in [Jetbrains Marketplace](https://plugins.jetbrains.com/plugin/17627-project-switcher)
+
+![idea-invoke.png](./easy-open-project-intellij-plugin/.image/image1.png)
