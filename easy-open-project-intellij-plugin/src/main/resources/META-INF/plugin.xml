@@ -1,0 +1,64 @@
+<idea-plugin>
+    <id>io.github.huzunrong.project-switcher</id>
+    <name>Project Switcher</name>
+    <vendor email="huzunrong@foxmail.com" url="https://github.com/newhoo/easy-open-project.git">huzunrong</vendor>
+
+    <description><![CDATA[
+        <p>A plugin that helps to switch project conveniently.</p>
+
+        Main functions:
+        <ul>
+            <li>Show project list</li>
+            <li>Switch opened projects</li>
+            <li>Open a project</li>
+            <li>Close opened projects</li>
+        </ul>
+
+        Quick path:
+        <ul>
+            <li>Top menu: Navigate/Project...(Ctrl/Command Shift P)</li>
+            <li>SearchEvery: Double click shift, switch to tab "Projects"</li>
+            <li>Right option/alt on project list to close selected project</li>
+        </ul>
+     ]]></description>
+
+    <change-notes><![CDATA[
+        2022.3.2
+        <ul>
+            <li>fix bugs with 2024.1.</li>
+        </ul>
+
+        2022.3.1
+        <ul>
+            <li>Search projects in specified directories correctly. (.idea or .iml file is no longer required.)</li>
+            <li>Support <a href="https://github.com/newhoo/vscode-easy-open-project">vscode version</a></li>
+        </ul>
+      ]]>
+    </change-notes>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
+    <idea-version since-build="211.0"/>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <!-- uncomment to enable plugin in all products -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add your extensions here -->
+        <applicationService serviceImplementation="io.github.newhoo.project.setting.MyProjectSwitcherSetting"/>
+        <applicationConfigurable instance="io.github.newhoo.project.setting.ProjectSwitchConfigurable" displayName="Project Switcher"/>
+
+        <searchEverywhereContributor implementation="io.github.newhoo.project.navigate.MyProjectSearchEverywhereContributor$Factory"/>
+    </extensions>
+
+    <actions>
+        <action id="io.github.newhoo.project.navigate.MyProjectSearchAction"
+                class="io.github.newhoo.project.navigate.MyProjectSearchAction" text="_Project..."
+                description="Switch project">
+            <add-to-group group-id="GoToTargetEx"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="control shift P"/>
+        </action>
+    </actions>
+
+</idea-plugin>
