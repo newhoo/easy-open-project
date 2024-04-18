@@ -7,7 +7,7 @@ Open projects via custom list easily.
 - Introduction: [easy-open-project-vscode-plugin/README](./easy-open-project-vscode-plugin/README.md)
 - Find in [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=newhoo.easy-open-project)
 
-![](docs/image-2.png)
+![](docs/image-1.png)
 
 ## Use in Idea
 
