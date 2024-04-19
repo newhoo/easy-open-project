@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>io.github.huzunrong.project-switcher</id>
-    <name>Project Switcher</name>
+    <name>Easy Open Project</name>
     <vendor email="huzunrong@foxmail.com" url="https://github.com/newhoo/easy-open-project.git">huzunrong</vendor>
 
     <description><![CDATA[
@@ -8,7 +8,7 @@
 
         Main functions:
         <ul>
-            <li>Show project list</li>
+            <li>Show project list (support keyword filtering)</li>
             <li>Switch opened projects</li>
             <li>Open a project</li>
             <li>Close opened projects</li>
@@ -23,6 +23,13 @@
      ]]></description>
 
     <change-notes><![CDATA[
+        2024.1
+        <ul>
+            <li>Change plugin name and icon (from <a href="https://www.iconfont.cn/search/index?searchType=icon&q=project&page=2&fills=1">iconfont</a>).</li>
+            <li>Simplify the plugin's implementation.</li>
+            <li>Support filtering project by keyword.</li>
+        </ul>
+
         2022.3.2
         <ul>
             <li>fix bugs with 2024.1.</li>
@@ -47,7 +54,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
         <applicationService serviceImplementation="io.github.newhoo.project.setting.MyProjectSwitcherSetting"/>
-        <applicationConfigurable instance="io.github.newhoo.project.setting.ProjectSwitchConfigurable" displayName="Project Switcher"/>
+        <applicationConfigurable instance="io.github.newhoo.project.setting.ProjectSwitchConfigurable" displayName="Easy Open Project"/>
 
         <searchEverywhereContributor implementation="io.github.newhoo.project.navigate.MyProjectSearchEverywhereContributor$Factory"/>
     </extensions>

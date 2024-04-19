@@ -19,7 +19,7 @@ public class MyProjectSwitcherSetting implements PersistentStateComponent<MyProj
 
     private Set<String> projectDirectoryList = new HashSet<>(4);
 
-    private static final MyProjectSwitcherSetting INSTANCE = ApplicationManager.getApplication().getService(MyProjectSwitcherSetting.class);
+    private Set<String> filterFolderList = new HashSet<>(4);
 
     @Nullable
     @Override
@@ -33,7 +33,7 @@ public class MyProjectSwitcherSetting implements PersistentStateComponent<MyProj
     }
 
     public static MyProjectSwitcherSetting getInstance() {
-        return INSTANCE;
+        return ApplicationManager.getApplication().getService(MyProjectSwitcherSetting.class);
     }
 
     public Set<String> getProjectDirectoryList() {
@@ -42,5 +42,13 @@ public class MyProjectSwitcherSetting implements PersistentStateComponent<MyProj
 
     public void setProjectDirectoryList(Set<String> projectDirectoryList) {
         this.projectDirectoryList = projectDirectoryList;
+    }
+
+    public Set<String> getFilterFolderList() {
+        return filterFolderList;
+    }
+
+    public void setFilterFolderList(Set<String> filterFolderList) {
+        this.filterFolderList = filterFolderList;
     }
 }

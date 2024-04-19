@@ -300,8 +300,9 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
 
             // 使用自定义目录查找项目
             Set<String> workspaces = MyProjectSwitcherSetting.getInstance().getProjectDirectoryList();
+            Set<String> filterFolderList = MyProjectSwitcherSetting.getInstance().getFilterFolderList();
             workspaces.stream()
-                      .flatMap(workspace -> searchProject(new File(workspace), workspaces))
+                      .flatMap(workspace -> searchProject(new File(workspace), workspaces, filterFolderList))
                       .sorted(Comparator.comparing(e -> -e.getLastModify()))
                       .filter(e -> !filterRecentProjectPathSet.contains(e.getProjectPath()))
                       .forEach(o -> foundItemDescriptorList.add(new FoundItemDescriptor<>(o, 0)));
@@ -319,15 +320,16 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     }
 
     private static final Set<String> IGNORE_DIR = Stream.of(
-            "target", "out", "build", "idea-sandbox", "logs", "src", "node_modules", "doc", "distributions", "docs"
+            "target", "out", "build", "idea-sandbox", "logs", "src", "node_modules", "docs"
     ).collect(Collectors.toSet());
 
-    private Stream<MyProjectNavigationItem> searchProject(@NotNull File workspace, Set<String> workspaces) {
+    private Stream<MyProjectNavigationItem> searchProject(@NotNull File workspace, Set<String> workspaces, Set<String> filterFolderList) {
         if (workspace.isDirectory()) {
             File[] childFiles = workspace.listFiles((dir, name) -> !IGNORE_DIR.contains(name) && !name.startsWith("."));
             if (childFiles != null) {
                 return Arrays.stream(childFiles)
                              .filter(file -> file.isDirectory() && !workspaces.contains(file.getAbsolutePath()))
+                             .filter(file -> filterFolderList.stream().noneMatch(s -> file.getName().contains(s)))
                              .map(file -> new MyProjectNavigationItem(file.getName(), backslashToSlash(file.getAbsolutePath()), file.lastModified(), false));
             }
         }
