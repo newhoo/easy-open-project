@@ -132,7 +132,7 @@ function openProject(projects: vscode.QuickPickItem[], showAddFolderItem: boolea
 function readProjects(dir: string, allDirs: string[], filterFolderNames: string[]): vscode.QuickPickItem[] {
   const projects: vscode.QuickPickItem[] = []
   fs.readdirSync(dir, { withFileTypes: true }).filter(dirent => {
-    return dirent.isDirectory() && !dirent.name.startsWith('.') && !filterFolderNames.includes(dirent.name);
+    return dirent.isDirectory() && !dirent.name.startsWith('.') && filterFolderNames.filter((keyword) => dirent.name.indexOf(keyword)>=0).length<=0;
   }).forEach(function (dirent) {
     var filePath = path.join(dirent.path, dirent.name);
     if (!allDirs.includes(filePath)) {

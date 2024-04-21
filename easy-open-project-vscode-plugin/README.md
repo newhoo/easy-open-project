@@ -6,9 +6,9 @@ Open projects via custom list easily. Install via the [VSCode Marketplace](https
 
 - Open `View` -> `Command Palette` -> `Easy Open Project` -> `Select folder to open`
 
-![](docs/image.png)
+![image1](docs/image.png)
 
-![](docs/image-1.png)
+![image2](docs/image-1.png)
 
 - Extension Settings
 
