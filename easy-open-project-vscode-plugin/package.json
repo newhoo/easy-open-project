@@ -4,7 +4,7 @@
   "publisher": "newhoo",
   "displayName": "Easy Open Project",
   "description": "Open projects via custom list easily",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/newhoo/easy-open-project.git"
@@ -61,6 +61,13 @@
 					},
 					"default": ["docs"],
 					"markdownDescription": "Filter project folder by keyword such as `docs`.",
+          "scope": "machine"
+        },
+        "easyOpenProject.openInNewWindow": {
+          "type": "boolean",
+          "order": 2,
+					"default": false,
+					"markdownDescription": "Force open project in new window.",
           "scope": "machine"
         }
       }

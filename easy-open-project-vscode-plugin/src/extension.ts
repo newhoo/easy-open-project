@@ -56,7 +56,7 @@ function addProjectFoldersCommand() {
 }
 
 /**
- * do open project
+ * open project
  * @param projects vscode pick items
  */
 function openProject(projects: vscode.QuickPickItem[], showAddFolderItem: boolean) {
@@ -112,14 +112,51 @@ function openProject(projects: vscode.QuickPickItem[], showAddFolderItem: boolea
       return
     }
 
-    vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(res.description!), {
-      forceNewWindow: true,
-    }).then(() => ({}),
-      () => {
-        vscode.window.showInformationMessage(`Could not open the project: ${res.description}`)
+    const projectPath = res.description!;
+    const forceNewWindow: boolean = vscode.workspace.getConfiguration('easyOpenProject')['openInNewWindow']
+    if (forceNewWindow) {
+      doOpenProject(projectPath, true);
+      return
+    }
+    if (vscode.workspace.workspaceFile == undefined && (vscode.workspace.workspaceFolders == undefined || vscode.workspace.workspaceFolders.length < 1) && vscode.workspace.textDocuments.length < 1) {
+      doOpenProject(projectPath, false);
+      return
+    }
+
+    // select by user
+    const openOperations: vscode.QuickPickItem[] = [
+      {
+        "label": "Yes"
+      },
+      {
+        "label": "No"
       }
-    );
+    ]
+    vscode.window.showQuickPick(openOperations,
+      {
+        placeHolder: "Open project in new window",
+        canPickMany: false,
+      }
+    ).then((res: vscode.QuickPickItem | undefined) => {
+      if (!res) return;
+      doOpenProject(projectPath, "Yes" === res.label);
+    })
   })
+}
+
+/**
+ * do open project
+ * @param projectPath 
+ * @param forceNewWindow 
+ */
+function doOpenProject(projectPath: string, forceNewWindow: boolean) {
+  vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(projectPath), {
+    forceNewWindow: forceNewWindow,
+  }).then(() => ({}),
+    () => {
+      vscode.window.showInformationMessage(`Could not open the project: ${projectPath}`)
+    }
+  );
 }
 
 /**
@@ -132,7 +169,7 @@ function openProject(projects: vscode.QuickPickItem[], showAddFolderItem: boolea
 function readProjects(dir: string, allDirs: string[], filterFolderNames: string[]): vscode.QuickPickItem[] {
   const projects: vscode.QuickPickItem[] = []
   fs.readdirSync(dir, { withFileTypes: true }).filter(dirent => {
-    return dirent.isDirectory() && !dirent.name.startsWith('.') && filterFolderNames.filter((keyword) => dirent.name.indexOf(keyword)>=0).length<=0;
+    return dirent.isDirectory() && !dirent.name.startsWith('.') && filterFolderNames.filter((keyword) => dirent.name.indexOf(keyword) >= 0).length <= 0;
   }).forEach(function (dirent) {
     var filePath = path.join(dirent.path, dirent.name);
     if (!allDirs.includes(filePath)) {
