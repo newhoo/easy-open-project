@@ -36,6 +36,7 @@ import com.intellij.ui.ColoredListCellRenderer;
 import com.intellij.ui.SimpleTextAttributes;
 import com.intellij.ui.speedSearch.SpeedSearchUtil;
 import com.intellij.util.Processor;
+import com.intellij.util.text.Matcher;
 import com.intellij.util.ui.UIUtil;
 import io.github.newhoo.project.setting.MyProjectSwitcherSetting;
 import org.jetbrains.annotations.NotNull;
@@ -148,23 +149,30 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
                 if (nameAttributes == null)
                     nameAttributes = new SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, fgColor);
 
-                ItemMatchers itemMatchers = getItemMatchers(list, value);
                 MyProjectNavigationItem item = (MyProjectNavigationItem) value;
                 String name = item.getProjectName() + " ";
                 String locationString = item.isOpen() ? "(opened)" : item.getProjectPath();
-
-                SpeedSearchUtil.appendColoredFragmentForMatcher(name, renderer, nameAttributes, itemMatchers.nameMatcher, bgColor, selected);
                 renderer.setIcon(item.isOpen() ? ExecutionUtil.getLiveIndicator(item.getIcon()) : item.getIcon());
+
+                ItemMatchers itemMatchers = getItemMatchers(list, value);
+                SpeedSearchUtil.appendColoredFragmentForMatcher(name, renderer, nameAttributes, itemMatchers.nameMatcher, bgColor, selected);
+
+                Matcher locationMatcher = itemMatchers.locationMatcher;
+                if (itemMatchers.nameMatcher != null && !item.isOpen()) {
+                    if (!itemMatchers.nameMatcher.matches(item.getProjectName()) && itemMatchers.nameMatcher.matches(item.getProjectPath())) {
+                        locationMatcher = itemMatchers.nameMatcher;
+                    }
+                }
 
                 FontMetrics fm = list.getFontMetrics(list.getFont());
                 int maxWidth = list.getWidth() - fm.stringWidth(name) - myRightComponentWidth - 36;
                 int fullWidth = fm.stringWidth(locationString);
                 if (fullWidth < maxWidth) {
-                    SpeedSearchUtil.appendColoredFragmentForMatcher(locationString, renderer, SimpleTextAttributes.GRAYED_ATTRIBUTES, itemMatchers.nameMatcher, bgColor, selected);
+                    SpeedSearchUtil.appendColoredFragmentForMatcher(locationString, renderer, SimpleTextAttributes.GRAYED_ATTRIBUTES, locationMatcher, bgColor, selected);
                 } else {
                     int adjustedWidth = Math.max(locationString.length() * maxWidth / fullWidth - 1, 3);
                     locationString = StringUtil.trimMiddle(locationString, adjustedWidth);
-                    SpeedSearchUtil.appendColoredFragmentForMatcher(locationString, renderer, SimpleTextAttributes.GRAYED_ATTRIBUTES, itemMatchers.nameMatcher, bgColor, selected);
+                    SpeedSearchUtil.appendColoredFragmentForMatcher(locationString, renderer, SimpleTextAttributes.GRAYED_ATTRIBUTES, locationMatcher, bgColor, selected);
                 }
                 return true;
             }
@@ -265,7 +273,6 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
         return false;
     }
 
-    private List<FoundItemDescriptor<MyProjectNavigationItem>> foundItemDescriptorList;
 
     @Override
     public void fetchWeightedElements(@NotNull String pattern, @NotNull ProgressIndicator progressIndicator, @NotNull Processor<? super FoundItemDescriptor<MyProjectNavigationItem>> consumer) {
@@ -275,45 +282,52 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
             return;
         }
 
-        if (foundItemDescriptorList == null) {
-            foundItemDescriptorList = new ArrayList<>(16);
+        List<MyProjectNavigationItem> foundProjectItemList = new ArrayList<>(32);
 
-            // 已经打开的项目
-            Project[] openProjects = ProjectUtil.getOpenProjects();
-            for (Project openProject : openProjects) {
-                FoundItemDescriptor<MyProjectNavigationItem> descriptor = new FoundItemDescriptor<>(new MyProjectNavigationItem(openProject.getName(), openProject.getPresentableUrl(), true), 1);
-                foundItemDescriptorList.add(descriptor);
-            }
-
-
-            // 使用idea自带的最近项目, 不会包含已打开的项目
-            Set<String> filterRecentProjectPathSet = Arrays.stream(openProjects).map(Project::getPresentableUrl).collect(Collectors.toSet());
-            RecentProjectsManagerBase recentProjectsManagerBase = (RecentProjectsManagerBase) RecentProjectsManager.getInstance();
-            List<String> recentPaths = recentProjectsManagerBase.getRecentPaths();
-            for (String recentPath : recentPaths) {
-                if (!filterRecentProjectPathSet.contains(recentPath)) {
-                    String projectName = recentProjectsManagerBase.getProjectName(recentPath);
-                    filterRecentProjectPathSet.add(recentPath);
-                    foundItemDescriptorList.add(new FoundItemDescriptor<>(new MyProjectNavigationItem(projectName, recentPath, false), 0));
-                }
-            }
-
-            // 使用自定义目录查找项目
-            Set<String> workspaces = MyProjectSwitcherSetting.getInstance().getProjectDirectoryList();
-            Set<String> filterFolderList = MyProjectSwitcherSetting.getInstance().getFilterFolderList();
-            workspaces.stream()
-                      .flatMap(workspace -> searchProject(new File(workspace), workspaces, filterFolderList))
-                      .sorted(Comparator.comparing(e -> -e.getLastModify()))
-                      .filter(e -> !filterRecentProjectPathSet.contains(e.getProjectPath()))
-                      .forEach(o -> foundItemDescriptorList.add(new FoundItemDescriptor<>(o, 0)));
+        // 已经打开的项目
+        Project[] openProjects = ProjectUtil.getOpenProjects();
+        for (Project openProject : openProjects) {
+            foundProjectItemList.add(new MyProjectNavigationItem(openProject.getName(), openProject.getPresentableUrl(), true));
         }
 
-        MinusculeMatcher minusculeMatcher = NameUtil.buildMatcher("*" + pattern + "*", NameUtil.MatchingCaseSensitivity.NONE);
-        for (FoundItemDescriptor<MyProjectNavigationItem> foundItemDescriptor : foundItemDescriptorList) {
-            if (minusculeMatcher.matches(foundItemDescriptor.getItem().getProjectName())
-                    || minusculeMatcher.matches(foundItemDescriptor.getItem().getProjectPath())) {
-                if (!consumer.process(foundItemDescriptor)) {
-                    return;
+        // 使用idea自带的最近项目, 不会包含已打开的项目
+        Set<String> filterRecentProjectPathSet = Arrays.stream(openProjects).map(Project::getPresentableUrl).collect(Collectors.toSet());
+        RecentProjectsManagerBase recentProjectsManagerBase = (RecentProjectsManagerBase) RecentProjectsManager.getInstance();
+        List<String> recentPaths = recentProjectsManagerBase.getRecentPaths();
+        for (String recentPath : recentPaths) {
+            if (!filterRecentProjectPathSet.contains(recentPath)) {
+                String projectName = recentProjectsManagerBase.getProjectName(recentPath);
+                filterRecentProjectPathSet.add(recentPath);
+                foundProjectItemList.add(new MyProjectNavigationItem(projectName, recentPath, false));
+            }
+        }
+
+        // 使用自定义目录查找项目
+        Set<String> workspaces = MyProjectSwitcherSetting.getInstance().getProjectDirectoryList();
+        Set<String> filterFolderList = MyProjectSwitcherSetting.getInstance().getFilterFolderList();
+        workspaces.stream()
+                  .flatMap(workspace -> searchProject(new File(workspace), workspaces, filterFolderList))
+                  .sorted(Comparator.comparing(e -> -e.getLastModify()))
+                  .filter(e -> !filterRecentProjectPathSet.contains(e.getProjectPath()))
+                  .forEach(foundProjectItemList::add);
+
+        MinusculeMatcher minusculeMatcher = NameUtil.buildMatcher("*" + pattern, NameUtil.MatchingCaseSensitivity.NONE);
+        for (MyProjectNavigationItem item : foundProjectItemList) {
+            if (item.isOpen()) {
+                if (minusculeMatcher.matches(item.getProjectName())) {
+                    if (!consumer.process(new FoundItemDescriptor<>(item, minusculeMatcher.matchingDegree(item.getProjectName())))) {
+                        return;
+                    }
+                }
+            } else {
+                if (minusculeMatcher.matches(item.getProjectName())) {
+                    if (!consumer.process(new FoundItemDescriptor<>(item, minusculeMatcher.matchingDegree(item.getProjectName())))) {
+                        return;
+                    }
+                } else if (minusculeMatcher.matches(item.getProjectPath())) {
+                    if (!consumer.process(new FoundItemDescriptor<>(item, minusculeMatcher.matchingDegree(item.getProjectPath())))) {
+                        return;
+                    }
                 }
             }
         }

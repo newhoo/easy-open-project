@@ -23,6 +23,11 @@
      ]]></description>
 
     <change-notes><![CDATA[
+        2024.2
+        <ul>
+            <li>Optimise searchEverywhere matching logic;</li>
+        </ul>
+
         2024.1
         <ul>
             <li>Change plugin name and icon (from <a href="https://www.iconfont.cn/search/index?searchType=icon&q=project&page=2&fills=1">iconfont</a>).</li>
