@@ -68,6 +68,7 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
 
     private final AnActionEvent event;
     private final MyProjectSwitcherSetting myProjectSwitcherSetting;
+    private List<MyProjectNavigationItem> foundProjectItemList;
 
     public MyProjectSearchEverywhereContributor(@NotNull AnActionEvent event) {
         this.event = event;
@@ -312,37 +313,39 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
             return;
         }
 
-        // idea打开过的项目
-        Set<String> ideKnownProjectPathSet = new HashSet<>();
-        // 展示的项目列表
-        List<MyProjectNavigationItem> foundProjectItemList = new ArrayList<>(32);
+        if (foundProjectItemList == null) {
+            // 展示的项目列表
+            foundProjectItemList = new ArrayList<>(32);
 
-        // 已经打开的项目
-        for (Project openProject : ProjectUtil.getOpenProjects()) {
-            ideKnownProjectPathSet.add(openProject.getPresentableUrl());
-            foundProjectItemList.add(new MyProjectNavigationItem(openProject.getName(), openProject.getPresentableUrl(), true));
-        }
+            // idea打开过的项目
+            Set<String> ideKnownProjectPathSet = new HashSet<>();
 
-        // 使用idea自带的最近项目, 不会包含已打开的项目
-        RecentProjectsManagerBase recentProjectsManagerBase = (RecentProjectsManagerBase) RecentProjectsManager.getInstance();
-        for (String recentPath : recentProjectsManagerBase.getRecentPaths()) {
-            if (!ideKnownProjectPathSet.contains(recentPath)) {
-                ideKnownProjectPathSet.add(recentPath);
-                foundProjectItemList.add(new MyProjectNavigationItem(recentProjectsManagerBase.getProjectName(recentPath), recentPath, false));
+            // 已经打开的项目
+            for (Project openProject : ProjectUtil.getOpenProjects()) {
+                ideKnownProjectPathSet.add(openProject.getPresentableUrl());
+                foundProjectItemList.add(new MyProjectNavigationItem(openProject.getName(), openProject.getPresentableUrl(), true));
             }
-        }
 
-        // 使用自定义目录查找项目
-        Set<String> workspaces = myProjectSwitcherSetting.getProjectDirectoryList();
-        Set<String> filterFolderList = myProjectSwitcherSetting.getFilterFolderList();
-        workspaces.stream()
-                  .flatMap(workspace -> searchProject(new File(workspace), workspaces, filterFolderList))
-                  .sorted(Comparator.comparing(e -> -e.getLastModify()))
-                  .filter(e -> !ideKnownProjectPathSet.contains(e.getProjectPath()))
-                  .forEach(foundProjectItemList::add);
+            // 使用idea自带的最近项目, 不会包含已打开的项目
+            RecentProjectsManagerBase recentProjectsManagerBase = (RecentProjectsManagerBase) RecentProjectsManager.getInstance();
+            for (String recentPath : recentProjectsManagerBase.getRecentPaths()) {
+                if (!ideKnownProjectPathSet.contains(recentPath)) {
+                    ideKnownProjectPathSet.add(recentPath);
+                    foundProjectItemList.add(new MyProjectNavigationItem(recentProjectsManagerBase.getProjectName(recentPath), recentPath, false));
+                }
+            }
+
+            // 使用自定义目录查找项目
+            Set<String> workspaces = myProjectSwitcherSetting.getProjectDirectoryList();
+            Set<String> filterFolderList = myProjectSwitcherSetting.getFilterFolderList();
+            workspaces.stream()
+                      .flatMap(workspace -> searchProject(new File(workspace), workspaces, filterFolderList))
+                      .sorted(Comparator.comparing(e -> -e.getLastModify()))
+                      .filter(e -> !ideKnownProjectPathSet.contains(e.getProjectPath()))
+                      .forEach(foundProjectItemList::add);
+        }
 
         MinusculeMatcher minusculeMatcher = NameUtil.buildMatcher("*" + pattern, NameUtil.MatchingCaseSensitivity.NONE);
-
         List<Pair<MyProjectNavigationItem, Integer>> openProjectItemList = foundProjectItemList.stream()
                                                                                                .filter(MyProjectNavigationItem::isOpen)
                                                                                                .filter(item -> minusculeMatcher.matches(item.getProjectName()))
