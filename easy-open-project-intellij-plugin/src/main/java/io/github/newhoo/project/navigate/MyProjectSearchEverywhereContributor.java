@@ -1,6 +1,7 @@
 package io.github.newhoo.project.navigate;
 
 import com.intellij.CommonBundle;
+import com.intellij.completion.ngram.slp.util.Pair;
 import com.intellij.execution.runners.ExecutionUtil;
 import com.intellij.ide.IdeBundle;
 import com.intellij.ide.IdeEventQueue;
@@ -15,9 +16,11 @@ import com.intellij.ide.actions.searcheverywhere.SearchEverywhereUI;
 import com.intellij.ide.actions.searcheverywhere.WeightedSearchEverywhereContributor;
 import com.intellij.ide.impl.ProjectUtil;
 import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.actionSystem.ex.CheckboxAction;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -52,6 +55,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,10 +66,12 @@ import java.util.stream.Stream;
  */
 public class MyProjectSearchEverywhereContributor implements WeightedSearchEverywhereContributor<MyProjectNavigationItem> {
 
-    final AnActionEvent event;
+    private final AnActionEvent event;
+    private final MyProjectSwitcherSetting myProjectSwitcherSetting;
 
     public MyProjectSearchEverywhereContributor(@NotNull AnActionEvent event) {
         this.event = event;
+        this.myProjectSwitcherSetting = MyProjectSwitcherSetting.getInstance();
     }
 
     @NotNull
@@ -87,6 +93,29 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
 
     @NotNull
     @Override
+    public List<AnAction> getActions(@NotNull Runnable onChanged) {
+        CheckboxAction filterPathAction = new CheckboxAction("Filter with path") {
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+
+            @Override
+            public boolean isSelected(@NotNull AnActionEvent e) {
+                return myProjectSwitcherSetting.isEnableFilterPathInSearchEvery();
+            }
+
+            @Override
+            public void setSelected(@NotNull AnActionEvent e, boolean state) {
+                myProjectSwitcherSetting.setEnableFilterPathInSearchEvery(state);
+                onChanged.run();
+            }
+        };
+        return Arrays.asList(filterPathAction);
+    }
+
+    @NotNull
+    @Override
     public ListCellRenderer<Object> getElementsRenderer() {
         return new SearchEverywherePsiRenderer(this) {
 
@@ -102,9 +131,9 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
                         if (!(selectedValue instanceof MyProjectNavigationItem)) {
                             return;
                         }
-//                        if (selectedValue == null || EXTRA_ELEM.equals(selectedValue)) {
-//                            return;
-//                        }
+                        // if (selectedValue == null || EXTRA_ELEM.equals(selectedValue)) {
+                        // return;
+                        // }
                         closeProject((MyProjectNavigationItem) selectedValue);
                     }
                 }
@@ -159,7 +188,9 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
 
                 Matcher locationMatcher = itemMatchers.locationMatcher;
                 if (itemMatchers.nameMatcher != null && !item.isOpen()) {
-                    if (!itemMatchers.nameMatcher.matches(item.getProjectName()) && itemMatchers.nameMatcher.matches(item.getProjectPath())) {
+                    if (myProjectSwitcherSetting.isEnableFilterPathInSearchEvery()
+                            && !itemMatchers.nameMatcher.matches(item.getProjectName())
+                            && itemMatchers.nameMatcher.matches(item.getProjectPath())) {
                         locationMatcher = itemMatchers.nameMatcher;
                     }
                 }
@@ -180,8 +211,22 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     }
 
     @Override
-    public @Nullable
-    Object getDataForItem(@NotNull MyProjectNavigationItem element, @NotNull String dataId) {
+    public boolean isEmptyPatternSupported() {
+        return true;
+    }
+
+    @Override
+    public boolean isShownInSeparateTab() {
+        return true;
+    }
+
+    @Override
+    public boolean showInFindResults() {
+        return false;
+    }
+
+    @Override
+    public @Nullable Object getDataForItem(@NotNull MyProjectNavigationItem element, @NotNull String dataId) {
         return null;
     }
 
@@ -259,75 +304,68 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     }
 
     @Override
-    public boolean isEmptyPatternSupported() {
-        return true;
-    }
-
-    @Override
-    public boolean isShownInSeparateTab() {
-        return true;
-    }
-
-    @Override
-    public boolean showInFindResults() {
-        return false;
-    }
-
-
-    @Override
-    public void fetchWeightedElements(@NotNull String pattern, @NotNull ProgressIndicator progressIndicator, @NotNull Processor<? super FoundItemDescriptor<MyProjectNavigationItem>> consumer) {
+    public void fetchWeightedElements(@NotNull String pattern, @NotNull ProgressIndicator progressIndicator,
+                                      @NotNull Processor<? super FoundItemDescriptor<MyProjectNavigationItem>> consumer) {
         Project project = event.getProject();
         SearchEverywhereManager seManager = SearchEverywhereManager.getInstance(project);
         if (!getSearchProviderId().equals(seManager.getSelectedTabID())) {
             return;
         }
 
+        // idea打开过的项目
+        Set<String> ideKnownProjectPathSet = new HashSet<>();
+        // 展示的项目列表
         List<MyProjectNavigationItem> foundProjectItemList = new ArrayList<>(32);
 
         // 已经打开的项目
-        Project[] openProjects = ProjectUtil.getOpenProjects();
-        for (Project openProject : openProjects) {
+        for (Project openProject : ProjectUtil.getOpenProjects()) {
+            ideKnownProjectPathSet.add(openProject.getPresentableUrl());
             foundProjectItemList.add(new MyProjectNavigationItem(openProject.getName(), openProject.getPresentableUrl(), true));
         }
 
         // 使用idea自带的最近项目, 不会包含已打开的项目
-        Set<String> filterRecentProjectPathSet = Arrays.stream(openProjects).map(Project::getPresentableUrl).collect(Collectors.toSet());
         RecentProjectsManagerBase recentProjectsManagerBase = (RecentProjectsManagerBase) RecentProjectsManager.getInstance();
-        List<String> recentPaths = recentProjectsManagerBase.getRecentPaths();
-        for (String recentPath : recentPaths) {
-            if (!filterRecentProjectPathSet.contains(recentPath)) {
-                String projectName = recentProjectsManagerBase.getProjectName(recentPath);
-                filterRecentProjectPathSet.add(recentPath);
-                foundProjectItemList.add(new MyProjectNavigationItem(projectName, recentPath, false));
+        for (String recentPath : recentProjectsManagerBase.getRecentPaths()) {
+            if (!ideKnownProjectPathSet.contains(recentPath)) {
+                ideKnownProjectPathSet.add(recentPath);
+                foundProjectItemList.add(new MyProjectNavigationItem(recentProjectsManagerBase.getProjectName(recentPath), recentPath, false));
             }
         }
 
         // 使用自定义目录查找项目
-        Set<String> workspaces = MyProjectSwitcherSetting.getInstance().getProjectDirectoryList();
-        Set<String> filterFolderList = MyProjectSwitcherSetting.getInstance().getFilterFolderList();
+        Set<String> workspaces = myProjectSwitcherSetting.getProjectDirectoryList();
+        Set<String> filterFolderList = myProjectSwitcherSetting.getFilterFolderList();
         workspaces.stream()
                   .flatMap(workspace -> searchProject(new File(workspace), workspaces, filterFolderList))
                   .sorted(Comparator.comparing(e -> -e.getLastModify()))
-                  .filter(e -> !filterRecentProjectPathSet.contains(e.getProjectPath()))
+                  .filter(e -> !ideKnownProjectPathSet.contains(e.getProjectPath()))
                   .forEach(foundProjectItemList::add);
 
         MinusculeMatcher minusculeMatcher = NameUtil.buildMatcher("*" + pattern, NameUtil.MatchingCaseSensitivity.NONE);
+
+        List<Pair<MyProjectNavigationItem, Integer>> openProjectItemList = foundProjectItemList.stream()
+                                                                                               .filter(MyProjectNavigationItem::isOpen)
+                                                                                               .filter(item -> minusculeMatcher.matches(item.getProjectName()))
+                                                                                               .map(item -> Pair.of(item, minusculeMatcher.matchingDegree(item.getProjectName())))
+                                                                                               .sorted((p1, p2) -> Integer.compare(p2.right, p1.right))
+                                                                                               .collect(Collectors.toList());
+        for (Pair<MyProjectNavigationItem, Integer> pair : openProjectItemList) {
+            if (!consumer.process(new FoundItemDescriptor<>(pair.left, Integer.MAX_VALUE))) {
+                return;
+            }
+        }
+
         for (MyProjectNavigationItem item : foundProjectItemList) {
             if (item.isOpen()) {
-                if (minusculeMatcher.matches(item.getProjectName())) {
-                    if (!consumer.process(new FoundItemDescriptor<>(item, minusculeMatcher.matchingDegree(item.getProjectName())))) {
-                        return;
-                    }
+                continue;
+            }
+            if (minusculeMatcher.matches(item.getProjectName())) {
+                if (!consumer.process(new FoundItemDescriptor<>(item, minusculeMatcher.matchingDegree(item.getProjectName())))) {
+                    return;
                 }
-            } else {
-                if (minusculeMatcher.matches(item.getProjectName())) {
-                    if (!consumer.process(new FoundItemDescriptor<>(item, minusculeMatcher.matchingDegree(item.getProjectName())))) {
-                        return;
-                    }
-                } else if (minusculeMatcher.matches(item.getProjectPath())) {
-                    if (!consumer.process(new FoundItemDescriptor<>(item, minusculeMatcher.matchingDegree(item.getProjectPath())))) {
-                        return;
-                    }
+            } else if (myProjectSwitcherSetting.isEnableFilterPathInSearchEvery() && minusculeMatcher.matches(item.getProjectPath())) {
+                if (!consumer.process(new FoundItemDescriptor<>(item, minusculeMatcher.matchingDegree(item.getProjectPath())))) {
+                    return;
                 }
             }
         }

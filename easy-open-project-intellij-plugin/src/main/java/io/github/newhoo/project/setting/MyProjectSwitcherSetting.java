@@ -21,6 +21,8 @@ public class MyProjectSwitcherSetting implements PersistentStateComponent<MyProj
 
     private Set<String> filterFolderList = new HashSet<>(4);
 
+    private boolean enableFilterPathInSearchEvery = false;
+
     @Nullable
     @Override
     public MyProjectSwitcherSetting getState() {
@@ -50,5 +52,13 @@ public class MyProjectSwitcherSetting implements PersistentStateComponent<MyProj
 
     public void setFilterFolderList(Set<String> filterFolderList) {
         this.filterFolderList = filterFolderList;
+    }
+
+    public boolean isEnableFilterPathInSearchEvery() {
+        return enableFilterPathInSearchEvery;
+    }
+
+    public void setEnableFilterPathInSearchEvery(boolean enableFilterPathInSearchEvery) {
+        this.enableFilterPathInSearchEvery = enableFilterPathInSearchEvery;
     }
 }
