@@ -15,6 +15,8 @@ import com.intellij.ide.actions.searcheverywhere.SearchEverywhereManager;
 import com.intellij.ide.actions.searcheverywhere.SearchEverywhereUI;
 import com.intellij.ide.actions.searcheverywhere.WeightedSearchEverywhereContributor;
 import com.intellij.ide.impl.ProjectUtil;
+import com.intellij.ide.plugins.IdeaPluginDescriptor;
+import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -23,6 +25,7 @@ import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.ex.CheckboxAction;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.markup.TextAttributes;
+import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
@@ -57,6 +60,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -84,7 +88,17 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     @NotNull
     @Override
     public String getGroupName() {
-        return "Projects";
+        return messageWithChineseLangCheck("Projects", "项目");
+    }
+
+    private static String messageWithChineseLangCheck(String enValue, String chValue) {
+        if (Locale.SIMPLIFIED_CHINESE.toString().equals(Locale.getDefault().toString())) {
+            IdeaPluginDescriptor plugin = PluginManagerCore.getPlugin(PluginId.getId("com.intellij.zh"));
+            if (plugin != null && plugin.isEnabled()) {
+                return chValue;
+            }
+        }
+        return enValue;
     }
 
     @Override
@@ -95,7 +109,7 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     @NotNull
     @Override
     public List<AnAction> getActions(@NotNull Runnable onChanged) {
-        CheckboxAction filterPathAction = new CheckboxAction("Filter with path") {
+        CheckboxAction filterPathAction = new CheckboxAction(messageWithChineseLangCheck("Filter with path", "同时过滤路径")) {
             @Override
             public @NotNull ActionUpdateThread getActionUpdateThread() {
                 return ActionUpdateThread.EDT;

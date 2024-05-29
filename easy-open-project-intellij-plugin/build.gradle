@@ -11,7 +11,7 @@ plugins {
 }
 
 group 'io.github.newohoo.project'
-version '2024.2'
+version '2024.2.1'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -30,7 +30,7 @@ intellij {
     version.set('2024.1')
 //    type.set("IU")
     updateSinceUntilBuild.set(false)
-    downloadSources.set(false)
+    downloadSources.set(true)
     sandboxDir.set("${rootProject.rootDir}/idea-sandbox")
 }
 
