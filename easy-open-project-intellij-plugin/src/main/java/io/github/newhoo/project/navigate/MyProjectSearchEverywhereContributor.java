@@ -17,6 +17,7 @@ import com.intellij.ide.actions.searcheverywhere.WeightedSearchEverywhereContrib
 import com.intellij.ide.impl.ProjectUtil;
 import com.intellij.ide.plugins.IdeaPluginDescriptor;
 import com.intellij.ide.plugins.PluginManagerCore;
+import com.intellij.openapi.actionSystem.ActionGroup;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -30,11 +31,11 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.openapi.wm.impl.ProjectWindowAction;
-import com.intellij.openapi.wm.impl.ProjectWindowActionGroup;
 import com.intellij.openapi.wm.impl.welcomeScreen.WelcomeFrame;
 import com.intellij.psi.codeStyle.MinusculeMatcher;
 import com.intellij.psi.codeStyle.NameUtil;
@@ -104,6 +105,13 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     @Override
     public int getSortWeight() {
         return 799;
+    }
+
+    @Override
+    public String getAdvertisement() {
+//        return DumbService.isDumb(myProject) ? IdeBundle.message("dumb.mode.results.might.be.incomplete") : null;
+        String key = SystemInfo.isMac ? "Option" : "Alt";
+        return messageWithChineseLangCheck("Press [" + key + "] to close selected project", "按 [" + key + "] 以关闭项目");
     }
 
     @NotNull
@@ -285,8 +293,8 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
      */
     private static void active(String projectLocation, @NotNull AnActionEvent e) {
         AnAction action = ActionManager.getInstance().getAction("OpenProjectWindows");
-        if (action instanceof ProjectWindowActionGroup) {
-            final AnAction[] children = ((ProjectWindowActionGroup) action).getChildren(null);
+        if (action instanceof ActionGroup) {
+            AnAction[] children = ((ActionGroup) action).getChildren(null);
             for (AnAction child : children) {
                 if (!(child instanceof ProjectWindowAction)) {
                     continue;

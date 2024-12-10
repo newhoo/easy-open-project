@@ -23,7 +23,7 @@
      ]]></description>
 
     <change-notes><![CDATA[
-        2024.2.1
+        2024.2.1 - 2024.2.2
         <ul>
             <li>Optimise searchEverywhere text;</li>
         </ul>
