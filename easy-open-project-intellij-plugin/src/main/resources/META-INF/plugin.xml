@@ -23,7 +23,12 @@
      ]]></description>
 
     <change-notes><![CDATA[
-        2024.2.1 - 2024.2.2
+        2025.1.1
+        <ul>
+            <li>fix bugs with 2025.1.</li>
+        </ul>
+
+        2024.2.1
         <ul>
             <li>Optimise searchEverywhere text;</li>
         </ul>

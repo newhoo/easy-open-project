@@ -264,7 +264,10 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     }
 
     private static void openProject(MyProjectNavigationItem selected, @NotNull AnActionEvent event) {
-        Project project = event.getRequiredData(CommonDataKeys.PROJECT);
+        Project project = event.getData(CommonDataKeys.PROJECT);
+        if (project == null) {
+            return;
+        }
         String projectBasePath = selected.getProjectPath();
         if (Files.exists(Paths.get(projectBasePath))) {
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
@@ -294,7 +297,8 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     private static void active(String projectLocation, @NotNull AnActionEvent e) {
         AnAction action = ActionManager.getInstance().getAction("OpenProjectWindows");
         if (action instanceof ActionGroup) {
-            AnAction[] children = ((ActionGroup) action).getChildren(null);
+            AnAction[] children = e.getUpdateSession().children((ActionGroup) action).toArray(AnAction.EMPTY_ARRAY);
+//            AnAction[] children = ((ActionGroup) action).getChildren(null, ActionManager.getInstance());
             for (AnAction child : children) {
                 if (!(child instanceof ProjectWindowAction)) {
                     continue;
