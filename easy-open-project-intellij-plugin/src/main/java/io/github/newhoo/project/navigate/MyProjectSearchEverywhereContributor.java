@@ -296,6 +296,7 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
      */
     private static void active(String projectLocation, @NotNull AnActionEvent e) {
         AnAction action = ActionManager.getInstance().getAction("OpenProjectWindows");
+        Project currentProject = e.getProject();
         if (action instanceof ActionGroup) {
             AnAction[] children = e.getUpdateSession().children((ActionGroup) action).toArray(AnAction.EMPTY_ARRAY);
 //            AnAction[] children = ((ActionGroup) action).getChildren(null, ActionManager.getInstance());
@@ -306,6 +307,10 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
                 final ProjectWindowAction windowAction = (ProjectWindowAction) child;
                 if (projectLocation.equals(windowAction.getProjectLocation())) {
                     windowAction.setSelected(e, true);
+                    if(currentProject != null) {
+                        String currentProjectPath = currentProject.getBasePath();
+                        MyProjectSwitcherSetting.getInstance().setLastOpenProjectPath(currentProjectPath);
+                    }
                     return;
                 }
             }
@@ -358,6 +363,17 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
                 if (!ideKnownProjectPathSet.contains(recentPath)) {
                     ideKnownProjectPathSet.add(recentPath);
                     foundProjectItemList.add(new MyProjectNavigationItem(recentProjectsManagerBase.getProjectName(recentPath), recentPath, false));
+                }
+            }
+
+            String lastPath = MyProjectSwitcherSetting.getInstance().getLastOpenProjectPath();
+            if(lastPath != null) {
+                for (int i =0; i< foundProjectItemList.size() ; i++) {
+                    if(lastPath.equals(foundProjectItemList.get(i).getProjectPath())) {
+                        MyProjectNavigationItem item = foundProjectItemList.remove(i);
+                        foundProjectItemList.add(0, item);
+                        break;
+                    }
                 }
             }
 
