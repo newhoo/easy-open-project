@@ -7,6 +7,7 @@ import com.intellij.ide.IdeBundle;
 import com.intellij.ide.IdeEventQueue;
 import com.intellij.ide.RecentProjectsManager;
 import com.intellij.ide.RecentProjectsManagerBase;
+import com.intellij.ide.actions.CloseProjectsActionBase;
 import com.intellij.ide.actions.SearchEverywherePsiRenderer;
 import com.intellij.ide.actions.searcheverywhere.FoundItemDescriptor;
 import com.intellij.ide.actions.searcheverywhere.SearchEverywhereContributor;
@@ -56,13 +57,8 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -291,7 +287,7 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
      * 切换项目窗口
      *
      * @param projectLocation
-     * @see com.intellij.openapi.wm.impl.ProjectWindowAction
+     * @see ProjectWindowAction
      * @see PlatformActions.xml OpenProjectWindows
      */
     private static void active(String projectLocation, @NotNull AnActionEvent e) {
@@ -307,7 +303,7 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
                 final ProjectWindowAction windowAction = (ProjectWindowAction) child;
                 if (projectLocation.equals(windowAction.getProjectLocation())) {
                     windowAction.setSelected(e, true);
-                    if(currentProject != null) {
+                    if (currentProject != null) {
                         String currentProjectPath = currentProject.getBasePath();
                         MyProjectSwitcherSetting.getInstance().setLastOpenProjectPath(currentProjectPath);
                     }
@@ -318,7 +314,7 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     }
 
     /**
-     * @see com.intellij.ide.actions.CloseProjectsActionBase
+     * @see CloseProjectsActionBase
      */
     private static void closeProject(MyProjectNavigationItem selectedItem) {
         if (!selectedItem.isOpen()) {
@@ -326,12 +322,12 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
         }
         IdeEventQueue.getInstance().getPopupManager().closeAllPopups(false);
         Arrays.stream(ProjectManager.getInstance().getOpenProjects())
-              .filter(project -> selectedItem.getProjectPath().equals(project.getPresentableUrl()))
-              .forEach(project -> {
-                  WindowManager.getInstance().updateDefaultFrameInfoOnProjectClose(project);
-                  ProjectManager.getInstance().closeAndDispose(project);
-                  RecentProjectsManager.getInstance().updateLastProjectPath();
-              });
+                .filter(project -> selectedItem.getProjectPath().equals(project.getPresentableUrl()))
+                .forEach(project -> {
+                    WindowManager.getInstance().updateDefaultFrameInfoOnProjectClose(project);
+                    ProjectManager.getInstance().closeAndDispose(project);
+                    RecentProjectsManager.getInstance().updateLastProjectPath();
+                });
         WelcomeFrame.showIfNoProjectOpened();
     }
 
@@ -367,12 +363,15 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
             }
 
             String lastPath = MyProjectSwitcherSetting.getInstance().getLastOpenProjectPath();
-            if(lastPath != null) {
-                for (int i =0; i< foundProjectItemList.size() ; i++) {
-                    if(lastPath.equals(foundProjectItemList.get(i).getProjectPath())) {
-                        MyProjectNavigationItem item = foundProjectItemList.remove(i);
-                        foundProjectItemList.add(0, item);
-                        break;
+            if (lastPath != null) {
+                String basePath = project != null ? project.getBasePath() : null;
+                if (!Objects.equals(basePath, lastPath)) {
+                    for (int i = 0; i < foundProjectItemList.size(); i++) {
+                        if (lastPath.equals(foundProjectItemList.get(i).getProjectPath())) {
+                            MyProjectNavigationItem item = foundProjectItemList.remove(i);
+                            foundProjectItemList.add(0, item);
+                            break;
+                        }
                     }
                 }
             }
@@ -381,19 +380,19 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
             Set<String> workspaces = myProjectSwitcherSetting.getProjectDirectoryList();
             Set<String> filterFolderList = myProjectSwitcherSetting.getFilterFolderList();
             workspaces.stream()
-                      .flatMap(workspace -> searchProject(new File(workspace), workspaces, filterFolderList))
-                      .sorted(Comparator.comparing(e -> -e.getLastModify()))
-                      .filter(e -> !ideKnownProjectPathSet.contains(e.getProjectPath()))
-                      .forEach(foundProjectItemList::add);
+                    .flatMap(workspace -> searchProject(new File(workspace), workspaces, filterFolderList))
+                    .sorted(Comparator.comparing(e -> -e.getLastModify()))
+                    .filter(e -> !ideKnownProjectPathSet.contains(e.getProjectPath()))
+                    .forEach(foundProjectItemList::add);
         }
 
         MinusculeMatcher minusculeMatcher = NameUtil.buildMatcher("*" + pattern, NameUtil.MatchingCaseSensitivity.NONE);
         List<Pair<MyProjectNavigationItem, Integer>> openProjectItemList = foundProjectItemList.stream()
-                                                                                               .filter(MyProjectNavigationItem::isOpen)
-                                                                                               .filter(item -> minusculeMatcher.matches(item.getProjectName()))
-                                                                                               .map(item -> Pair.of(item, minusculeMatcher.matchingDegree(item.getProjectName())))
-                                                                                               .sorted((p1, p2) -> Integer.compare(p2.right, p1.right))
-                                                                                               .collect(Collectors.toList());
+                .filter(MyProjectNavigationItem::isOpen)
+                .filter(item -> minusculeMatcher.matches(item.getProjectName()))
+                .map(item -> Pair.of(item, minusculeMatcher.matchingDegree(item.getProjectName())))
+                .sorted((p1, p2) -> Integer.compare(p2.right, p1.right))
+                .collect(Collectors.toList());
         for (Pair<MyProjectNavigationItem, Integer> pair : openProjectItemList) {
             if (!consumer.process(new FoundItemDescriptor<>(pair.left, Integer.MAX_VALUE))) {
                 return;
@@ -425,9 +424,9 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
             File[] childFiles = workspace.listFiles((dir, name) -> !IGNORE_DIR.contains(name) && !name.startsWith("."));
             if (childFiles != null) {
                 return Arrays.stream(childFiles)
-                             .filter(file -> file.isDirectory() && !workspaces.contains(file.getAbsolutePath()))
-                             .filter(file -> filterFolderList.stream().noneMatch(s -> file.getName().contains(s)))
-                             .map(file -> new MyProjectNavigationItem(file.getName(), backslashToSlash(file.getAbsolutePath()), file.lastModified(), false));
+                        .filter(file -> file.isDirectory() && !workspaces.contains(file.getAbsolutePath()))
+                        .filter(file -> filterFolderList.stream().noneMatch(s -> file.getName().contains(s)))
+                        .map(file -> new MyProjectNavigationItem(file.getName(), backslashToSlash(file.getAbsolutePath()), file.lastModified(), false));
             }
         }
         return Stream.empty();

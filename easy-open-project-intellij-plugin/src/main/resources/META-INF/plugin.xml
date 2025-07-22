@@ -23,6 +23,17 @@
      ]]></description>
 
     <change-notes><![CDATA[
+        2025.1.3
+        <ul>
+            <li>Skip reordering if current project path matches last activated one.</li>
+        </ul>
+
+
+        2025.1.2
+        <ul>
+            <li>Place last activated project at top when switching.</li>
+        </ul>
+
         2025.1.1
         <ul>
             <li>fix bugs with 2025.1.</li>
@@ -69,9 +80,11 @@
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
         <applicationService serviceImplementation="io.github.newhoo.project.setting.MyProjectSwitcherSetting"/>
-        <applicationConfigurable instance="io.github.newhoo.project.setting.ProjectSwitchConfigurable" displayName="Easy Open Project"/>
+        <applicationConfigurable instance="io.github.newhoo.project.setting.ProjectSwitchConfigurable"
+                                 displayName="Easy Open Project"/>
 
-        <searchEverywhereContributor implementation="io.github.newhoo.project.navigate.MyProjectSearchEverywhereContributor$Factory"/>
+        <searchEverywhereContributor
+                implementation="io.github.newhoo.project.navigate.MyProjectSearchEverywhereContributor$Factory"/>
     </extensions>
 
     <actions>
