@@ -400,7 +400,7 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
 
             // 已经打开的项目
             Arrays.stream(ProjectUtil.getOpenProjects())
-                  .sorted(Comparator.comparing(Project::getName))
+                  .sorted(Comparator.comparing(Project::getName, String::compareToIgnoreCase))
                   .peek(openProject -> {
                       if (openProject.getPresentableUrl().equals(lastOpenPath)) {
                           ideKnownProjectPathSet.add(openProject.getPresentableUrl());
