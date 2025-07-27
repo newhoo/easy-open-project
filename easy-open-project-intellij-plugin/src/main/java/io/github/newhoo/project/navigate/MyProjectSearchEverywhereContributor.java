@@ -7,16 +7,21 @@ import com.intellij.ide.IdeBundle;
 import com.intellij.ide.IdeEventQueue;
 import com.intellij.ide.RecentProjectsManager;
 import com.intellij.ide.RecentProjectsManagerBase;
+import com.intellij.ide.actions.RevealFileAction;
 import com.intellij.ide.actions.SearchEverywherePsiRenderer;
+import com.intellij.ide.actions.searcheverywhere.ExtendedInfo;
 import com.intellij.ide.actions.searcheverywhere.FoundItemDescriptor;
+import com.intellij.ide.actions.searcheverywhere.SearchEverywhereCommandInfo;
 import com.intellij.ide.actions.searcheverywhere.SearchEverywhereContributor;
 import com.intellij.ide.actions.searcheverywhere.SearchEverywhereContributorFactory;
+import com.intellij.ide.actions.searcheverywhere.SearchEverywhereExtendedInfoProvider;
 import com.intellij.ide.actions.searcheverywhere.SearchEverywhereManager;
 import com.intellij.ide.actions.searcheverywhere.SearchEverywhereUI;
 import com.intellij.ide.actions.searcheverywhere.WeightedSearchEverywhereContributor;
 import com.intellij.ide.impl.ProjectUtil;
 import com.intellij.ide.plugins.IdeaPluginDescriptor;
 import com.intellij.ide.plugins.PluginManagerCore;
+import com.intellij.idea.ActionsBundle;
 import com.intellij.openapi.actionSystem.ActionGroup;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
@@ -56,12 +61,13 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -69,13 +75,19 @@ import java.util.stream.Stream;
 /**
  * MyProjectSearchEverywhereContributor
  */
-public class MyProjectSearchEverywhereContributor implements WeightedSearchEverywhereContributor<MyProjectNavigationItem> {
+public class MyProjectSearchEverywhereContributor implements WeightedSearchEverywhereContributor<MyProjectNavigationItem>, SearchEverywhereExtendedInfoProvider {
 
+    private final SearchEverywhereCommandInfo FINDER_COMMAND = new SearchEverywhereCommandInfo("finder", SystemInfo.isMac ? ActionsBundle.message("action.RevealIn.name.mac") : ActionsBundle.message("action.RevealIn.name.other", IdeBundle.message("action.explorer.text")), this);
+
+    private final Project project;
     private final AnActionEvent event;
     private final MyProjectSwitcherSetting myProjectSwitcherSetting;
     private List<MyProjectNavigationItem> foundProjectItemList;
 
+    private static String lastOpenPath = null;
+
     public MyProjectSearchEverywhereContributor(@NotNull AnActionEvent event) {
+        project = event.getData(CommonDataKeys.PROJECT);
         this.event = event;
         this.myProjectSwitcherSetting = MyProjectSwitcherSetting.getInstance();
     }
@@ -93,7 +105,7 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     }
 
     private static String messageWithChineseLangCheck(String enValue, String chValue) {
-        if (Locale.SIMPLIFIED_CHINESE.toString().equals(Locale.getDefault().toString())) {
+        if (Locale.getDefault().toString().contains(Locale.SIMPLIFIED_CHINESE.toString())) {
             IdeaPluginDescriptor plugin = PluginManagerCore.getPlugin(PluginId.getId("com.intellij.zh"));
             if (plugin != null && plugin.isEnabled()) {
                 return chValue;
@@ -135,6 +147,18 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
             }
         };
         return Arrays.asList(filterPathAction);
+    }
+
+    @Override
+    public @NotNull List<SearchEverywhereCommandInfo> getSupportedCommands() {
+        return Arrays.asList(this.FINDER_COMMAND);
+    }
+
+    @Override
+    public @Nullable ExtendedInfo createExtendedInfo() {
+        return new ExtendedInfo(
+                o -> !(o instanceof MyProjectNavigationItem item) || !item.isOpen() ? null : getAdvertisement(),
+                o -> null);
     }
 
     @NotNull
@@ -255,6 +279,10 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
 
     @Override
     public boolean processSelectedItem(@NotNull MyProjectNavigationItem selected, int modifiers, @NotNull String searchText) {
+        if (isCommand(searchText, FINDER_COMMAND)) {
+            RevealFileAction.openFile(new File(selected.getProjectPath()));
+            return true;
+        }
         if (selected.isOpen()) {
             active(selected.getProjectPath(), event);
             return true;
@@ -296,21 +324,18 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
      */
     private static void active(String projectLocation, @NotNull AnActionEvent e) {
         AnAction action = ActionManager.getInstance().getAction("OpenProjectWindows");
-        Project currentProject = e.getProject();
         if (action instanceof ActionGroup) {
             AnAction[] children = e.getUpdateSession().children((ActionGroup) action).toArray(AnAction.EMPTY_ARRAY);
 //            AnAction[] children = ((ActionGroup) action).getChildren(null, ActionManager.getInstance());
             for (AnAction child : children) {
-                if (!(child instanceof ProjectWindowAction)) {
+                if (!(child instanceof ProjectWindowAction windowAction)) {
                     continue;
                 }
-                final ProjectWindowAction windowAction = (ProjectWindowAction) child;
                 if (projectLocation.equals(windowAction.getProjectLocation())) {
                     windowAction.setSelected(e, true);
-                    if(currentProject != null) {
-                        String currentProjectPath = currentProject.getBasePath();
-                        MyProjectSwitcherSetting.getInstance().setLastOpenProjectPath(currentProjectPath);
-                    }
+                    Optional.ofNullable(e.getProject()).ifPresent(currentProject -> {
+                        lastOpenPath = currentProject.getPresentableUrl();
+                    });
                     return;
                 }
             }
@@ -335,27 +360,60 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
         WelcomeFrame.showIfNoProjectOpened();
     }
 
+    private static Optional<String> extractFirstWord(String input) {
+        return !StringUtil.isEmptyOrSpaces(input) && input.contains(" ") ? Optional.of(input.split(" ")[0]) : Optional.empty();
+    }
+
+    private String filterString(String input) {
+        return extractFirstWord(input)
+                .filter((firstWord) -> this.FINDER_COMMAND.getCommandWithPrefix().startsWith(firstWord))
+                .map((firstWord) -> input.substring(firstWord.length() + 1))
+                .orElse(input);
+    }
+
+    private static boolean isCommand(String input, SearchEverywhereCommandInfo command) {
+        return input != null && extractFirstWord(input)
+                .map((firstWord) -> command.getCommandWithPrefix().startsWith(firstWord))
+                .orElse(false);
+    }
+
     @Override
     public void fetchWeightedElements(@NotNull String pattern, @NotNull ProgressIndicator progressIndicator,
                                       @NotNull Processor<? super FoundItemDescriptor<MyProjectNavigationItem>> consumer) {
-        Project project = event.getProject();
         SearchEverywhereManager seManager = SearchEverywhereManager.getInstance(project);
         if (!getSearchProviderId().equals(seManager.getSelectedTabID())) {
-            return;
+            if (!isCommand(pattern, FINDER_COMMAND)) {
+                return;
+            }
+        }
+
+        if (!StringUtil.isEmptyOrSpaces(pattern)) {
+            pattern = this.filterString(pattern);
         }
 
         if (foundProjectItemList == null) {
             // 展示的项目列表
-            foundProjectItemList = new ArrayList<>(32);
+            foundProjectItemList = new LinkedList<>();
 
             // idea打开过的项目
             Set<String> ideKnownProjectPathSet = new HashSet<>();
 
             // 已经打开的项目
-            for (Project openProject : ProjectUtil.getOpenProjects()) {
-                ideKnownProjectPathSet.add(openProject.getPresentableUrl());
-                foundProjectItemList.add(new MyProjectNavigationItem(openProject.getName(), openProject.getPresentableUrl(), true));
-            }
+            Arrays.stream(ProjectUtil.getOpenProjects())
+                  .sorted(Comparator.comparing(Project::getName))
+                  .peek(openProject -> {
+                      if (openProject.getPresentableUrl().equals(lastOpenPath)) {
+                          ideKnownProjectPathSet.add(openProject.getPresentableUrl());
+                          foundProjectItemList.add(new MyProjectNavigationItem(openProject.getName(), openProject.getPresentableUrl(), true));
+                      }
+                  })
+                  .toList()
+                  .forEach(openProject -> {
+                      if (!openProject.getPresentableUrl().equals(lastOpenPath)) {
+                          ideKnownProjectPathSet.add(openProject.getPresentableUrl());
+                          foundProjectItemList.add(new MyProjectNavigationItem(openProject.getName(), openProject.getPresentableUrl(), true));
+                      }
+                  });
 
             // 使用idea自带的最近项目, 不会包含已打开的项目
             RecentProjectsManagerBase recentProjectsManagerBase = (RecentProjectsManagerBase) RecentProjectsManager.getInstance();
@@ -363,17 +421,6 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
                 if (!ideKnownProjectPathSet.contains(recentPath)) {
                     ideKnownProjectPathSet.add(recentPath);
                     foundProjectItemList.add(new MyProjectNavigationItem(recentProjectsManagerBase.getProjectName(recentPath), recentPath, false));
-                }
-            }
-
-            String lastPath = MyProjectSwitcherSetting.getInstance().getLastOpenProjectPath();
-            if(lastPath != null) {
-                for (int i =0; i< foundProjectItemList.size() ; i++) {
-                    if(lastPath.equals(foundProjectItemList.get(i).getProjectPath())) {
-                        MyProjectNavigationItem item = foundProjectItemList.remove(i);
-                        foundProjectItemList.add(0, item);
-                        break;
-                    }
                 }
             }
 

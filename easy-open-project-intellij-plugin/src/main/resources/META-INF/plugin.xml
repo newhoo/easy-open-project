@@ -23,37 +23,14 @@
      ]]></description>
 
     <change-notes><![CDATA[
-        2025.1.1
+        2025.1.2
         <ul>
-            <li>fix bugs with 2025.1.</li>
+            <li>Optimize the order of open projects.</li>
+            <li>Add custom command function from RestfulBox plugin. It's recommended to use RestfulBox.</li>
         </ul>
-
-        2024.2.1
         <ul>
-            <li>Optimise searchEverywhere text;</li>
-        </ul>
-
-        2024.2
-        <ul>
-            <li>Optimise searchEverywhere matching logic;</li>
-        </ul>
-
-        2024.1
-        <ul>
-            <li>Change plugin name and icon (from <a href="https://www.iconfont.cn/search/index?searchType=icon&q=project&page=2&fills=1">iconfont</a>).</li>
-            <li>Simplify the plugin's implementation.</li>
-            <li>Support filtering project by keyword.</li>
-        </ul>
-
-        2022.3.2
-        <ul>
-            <li>fix bugs with 2024.1.</li>
-        </ul>
-
-        2022.3.1
-        <ul>
-            <li>Search projects in specified directories correctly. (.idea or .iml file is no longer required.)</li>
-            <li>Support <a href="https://github.com/newhoo/vscode-easy-open-project">vscode version</a></li>
+            <li>优化已打开项目的顺序，将上次访问的项目放第一位</li>
+            <li>从 RestfulBox 插件迁移部分自定义指令，推荐使用 RestfulBox 插件</li>
         </ul>
       ]]>
     </change-notes>

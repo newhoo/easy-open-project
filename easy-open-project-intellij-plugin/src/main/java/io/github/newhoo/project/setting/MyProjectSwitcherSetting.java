@@ -23,8 +23,6 @@ public class MyProjectSwitcherSetting implements PersistentStateComponent<MyProj
 
     private boolean enableFilterPathInSearchEvery = false;
 
-    private String lastOpenProjectPath;
-
     @Nullable
     @Override
     public MyProjectSwitcherSetting getState() {
@@ -62,12 +60,5 @@ public class MyProjectSwitcherSetting implements PersistentStateComponent<MyProj
 
     public void setEnableFilterPathInSearchEvery(boolean enableFilterPathInSearchEvery) {
         this.enableFilterPathInSearchEvery = enableFilterPathInSearchEvery;
-    }
-
-    public String getLastOpenProjectPath() {
-        return lastOpenProjectPath;
-    }
-    public void setLastOpenProjectPath(String lastOpenProjectPath) {
-        this.lastOpenProjectPath = lastOpenProjectPath;
     }
 }
