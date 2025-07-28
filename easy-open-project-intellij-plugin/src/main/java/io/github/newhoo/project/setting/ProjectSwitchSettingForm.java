@@ -63,14 +63,14 @@ public class ProjectSwitchSettingForm extends JPanel {
             ToolbarDecorator decorator = ToolbarDecorator.createDecorator(jbList);
             decorator.disableUpDownActions();
             decorator.setAddAction(button -> {
-                String folderName = Messages.showInputDialog("Input filter project name keyword such as docs.", "Filter Project Name", null);
+                String folderName = Messages.showInputDialog("Input project name keyword such as docs.", "Filter Project Name", null);
                 if (StringUtils.isNoneEmpty(folderName) && !filterFolderModel.contains(folderName)) {
                     filterFolderModel.addElement(folderName);
                 }
             });
             decorator.setRemoveAction(button -> ListUtil.removeSelectedItems(jbList));
             JPanel panel = decorator.createPanel();
-            panel.setBorder(IdeBorderFactory.createTitledBorder("Filter Project Name Keyword", false));
+            panel.setBorder(IdeBorderFactory.createTitledBorder("Filter out Project by Keyword", false));
 
             this.add(panel, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
                             GridConstraints.SIZEPOLICY_WANT_GROW | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_WANT_GROW | GridConstraints.SIZEPOLICY_CAN_GROW,

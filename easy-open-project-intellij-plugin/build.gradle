@@ -11,7 +11,7 @@ plugins {
 }
 
 group 'io.github.newohoo.project'
-version '2025.1.2'
+version '2025.1.3'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17

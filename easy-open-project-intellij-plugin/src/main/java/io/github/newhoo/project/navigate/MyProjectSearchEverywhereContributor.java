@@ -105,13 +105,7 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     }
 
     private static String messageWithChineseLangCheck(String enValue, String chValue) {
-        if (Locale.getDefault().toString().contains(Locale.SIMPLIFIED_CHINESE.toString())) {
-            IdeaPluginDescriptor plugin = PluginManagerCore.getPlugin(PluginId.getId("com.intellij.zh"));
-            if (plugin != null && plugin.isEnabled()) {
-                return chValue;
-            }
-        }
-        return enValue;
+        return ActionsBundle.message("action.RevealIn.name.mac").contains("访达") ? chValue : enValue;
     }
 
     @Override

@@ -23,7 +23,6 @@
      ]]></description>
 
     <change-notes><![CDATA[
-        2025.1.2
         <ul>
             <li>Optimize the order of open projects.</li>
             <li>Add custom command function from RestfulBox plugin. It's recommended to use RestfulBox.</li>
