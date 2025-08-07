@@ -1,7 +1,6 @@
 package io.github.newhoo.project.navigate;
 
 import com.intellij.CommonBundle;
-import com.intellij.completion.ngram.slp.util.Pair;
 import com.intellij.execution.runners.ExecutionUtil;
 import com.intellij.ide.IdeBundle;
 import com.intellij.ide.IdeEventQueue;
@@ -51,6 +50,7 @@ import com.intellij.util.Processor;
 import com.intellij.util.text.Matcher;
 import com.intellij.util.ui.UIUtil;
 import io.github.newhoo.project.setting.MyProjectSwitcherSetting;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -123,7 +123,7 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
     @NotNull
     @Override
     public List<AnAction> getActions(@NotNull Runnable onChanged) {
-        CheckboxAction filterPathAction = new CheckboxAction(messageWithChineseLangCheck("Filter with path", "同时过滤路径")) {
+        CheckboxAction filterPathAction = new CheckboxAction(messageWithChineseLangCheck("Filter with path", "同时按路径过滤")) {
             @Override
             public @NotNull ActionUpdateThread getActionUpdateThread() {
                 return ActionUpdateThread.EDT;
@@ -433,10 +433,10 @@ public class MyProjectSearchEverywhereContributor implements WeightedSearchEvery
                                                                                                .filter(MyProjectNavigationItem::isOpen)
                                                                                                .filter(item -> minusculeMatcher.matches(item.getProjectName()))
                                                                                                .map(item -> Pair.of(item, minusculeMatcher.matchingDegree(item.getProjectName())))
-                                                                                               .sorted((p1, p2) -> Integer.compare(p2.right, p1.right))
+                                                                                               .sorted((p1, p2) -> Integer.compare(p2.getRight(), p1.getRight()))
                                                                                                .collect(Collectors.toList());
         for (Pair<MyProjectNavigationItem, Integer> pair : openProjectItemList) {
-            if (!consumer.process(new FoundItemDescriptor<>(pair.left, Integer.MAX_VALUE))) {
+            if (!consumer.process(new FoundItemDescriptor<>(pair.getLeft(), Integer.MAX_VALUE))) {
                 return;
             }
         }
