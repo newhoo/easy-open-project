@@ -2,6 +2,10 @@
 
 Open projects via custom list easily.
 
+## State
+
+The current plugin has been migrated to the [RestfulBox](https://plugins.jetbrains.com/plugin/14723-restfulbox) plugin. Try install it which works fine.
+
 ## Use in VSCode
 
 - Introduction: [easy-open-project-vscode-plugin/README](./easy-open-project-vscode-plugin/README.md)
