@@ -2,9 +2,7 @@
 
 Open projects via custom list easily.
 
-## State
-
-The current plugin has been migrated to the [RestfulBox](https://plugins.jetbrains.com/plugin/14723-restfulbox) plugin. Try install it which works fine.
+_**State: The idea plugin has been migrated to the [RestfulBox](https://plugins.jetbrains.com/plugin/14723-restfulbox) plugin.**_
 
 ## Use in VSCode
 
